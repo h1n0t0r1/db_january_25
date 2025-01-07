@@ -1,0 +1,54 @@
+Change Table Name:
+ALTER TABLE table_name 
+RENAME TO new_table_name;
+
+Rename Column:
+ALTER TABLE table_name 
+RENAME COLUMN column_name TO new_table_name;
+
+Add column:
+ALTER TABLE table_name 
+ADD COLUMN column_name datatype column_constraint;
+
+Change column type:
+ALTER TABLE table_name
+ALTER COLUMN column_name TYPE new_type
+
+With cast
+ALTER TABLE table_name
+ALTER COLUMN column_name TYPE new_type using column_name::new_type
+
+
+
+Drop column:
+ALTER TABLE table_name 
+DROP COLUMN column_name;
+
+Change default value of a column:
+ALTER TABLE ALTER COLUMN SET DEFAULT or  DROP DEFAULT
+
+Set/remove not null:
+ALTER TABLE table_name 
+ALTER COLUMN column_name 
+[SET NOT NULL| DROP NOT NULL];
+
+Add constraint:
+ALTER TABLE table_name 
+ADD CONSTRAINT constraint_name constraint_definition;
+
+drop constraint:
+ALTER TABLE table_name 
+DROP CONSTRAINT constraint_name
+
+ADD check:
+ALTER TABLE table_name 
+ADD CHECK expression; expression => (column_name > 10)
+
+
+
+
+
+
+
+
+
