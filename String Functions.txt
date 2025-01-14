@@ -1,0 +1,92 @@
+left(string, n) -> Returns n characters from left side of the string; if n is negative returns all characters from left - n
+right(string, n) -> Returns n characters from right side of the string; if n is negative returns all characters from right - n
+substring(string, start_pos, len) -> Returns part of string from start_pos with length of len
+substring(input_string, pattern_string) -> if pattern_string was found in input string it will be returned, else return null
+substring(input_string, regex) -> if regex was found in input string it will be returned, else return null
+length(string) || char_length(string) -> Returns length
+replace(string, pattern, replaced_str) -> replace pattern with replaced_str in string
+position(pattern IN string) -> return the position of the pattern in string. Returns 0 if no pattern found.
+concat()
+concat_ws(separator, variable, variable) - concatenate with separator 
+reverse(string) -> reverse string
+repeat(string, n) -> repeat string n times
+translate(string, pattern, code) -> will replace in string char from pattern with same possition char from code
+trim(string, char) -> remove from left and right char from a string. If no char provided remove spaces
+ltrim(string, char) -> remove from left char from a string. If no char provided remove spaces
+rtrim(string, char) -> remove from right char from a string. If no char provided remove spaces
+CAST(variable AS data_type) -> cast variable to data_type. :: is another way to cast. :: is postges, not SQL standart, CAST is SQL standart
+
+
+round(float, decimal_place) -> round float to the decimal_place after point.
+trunc(float, decimal_place) -> cut float to decimal_place after point. No Rounding up or down. If no decimal_place return integer without rounding up or down.
+ceil(float) -> round to nearest int upper
+floor(float) -> round to nearest integer down
+
+
+dates
+
+extract(pattern FROM DATE) -> extract pattern from DATE : extract('YEAR" FROM DATE), extract('DAY" FROM DATE)
+date_part(patern_part, date) -> returns pattern_part from date : date_part('YEAR", date)
+
+to_char(data) -> convert data to a string; 
+to_char(date, format) will return a date in a specific format
+
+Pattern	Description
+HH							hour of day (01–12)
+HH12						hour of day (01–12)
+HH24						hour of day (00–23)
+MI							minute (00–59)
+SS							second (00–59)
+MS							millisecond (000–999)
+US							microsecond (000000–999999)
+FF1							tenth of second (0–9)
+FF2							hundredth of second (00–99)
+FF3							millisecond (000–999)
+FF4							tenth of a millisecond (0000–9999)
+FF5							hundredth of a millisecond (00000–99999)
+FF6							microsecond (000000–999999)
+SSSS, 						SSSSS	seconds past midnight (0–86399)
+AM, am, PM or pm			meridiem indicator (without periods)
+A.M., a.m., P.M. or p.m.	meridiem indicator (with periods)
+Y,YYY						year (4 or more digits) with comma
+YYYY						year (4 or more digits)
+YYY							last 3 digits of year
+YY							last 2 digits of year
+Y							last digit of year
+IYYY						ISO 8601 week-numbering year (4 or more digits)
+IYY							last 3 digits of ISO 8601 week-numbering year
+IY							last 2 digits of ISO 8601 week-numbering year
+I							last digit of ISO 8601 week-numbering year
+BC, bc, AD or ad			era indicator (without periods)
+B.C., b.c., A.D. or a.d.	era indicator (with periods)
+MONTH						full upper case month name (blank-padded to 9 chars)
+Month						full capitalized month name (blank-padded to 9 chars)
+month						full lower case month name (blank-padded to 9 chars)
+MON							abbreviated upper case month name (3 chars in English, localized lengths vary)
+Mon							abbreviated capitalized month name (3 chars in English, localized lengths vary)
+mon							abbreviated lower case month name (3 chars in English, localized lengths vary)
+MM							month number (01–12)
+DAY							full upper case day name (blank-padded to 9 chars)
+Day							full capitalized day name (blank-padded to 9 chars)
+day							full lower case day name (blank-padded to 9 chars)
+DY							abbreviated upper case day name (3 chars in English, localized lengths vary)
+Dy							abbreviated capitalized day name (3 chars in English, localized lengths vary)
+dy							abbreviated lower case day name (3 chars in English, localized lengths vary)
+DDD							day of year (001–366)
+IDDD						day of ISO 8601 week-numbering year (001–371; day 1 of the year is Monday of the first ISO week)
+DD							day of month (01–31)
+D							day of the week, Sunday (1) to Saturday (7)
+ID							ISO 8601 day of the week, Monday (1) to Sunday (7)
+W							week of month (1–5) (the first week starts on the first day of the month)
+WW							week number of year (1–53) (the first week starts on the first day of the year)
+IW							week number of ISO 8601 week-numbering year (01–53; the first Thursday of the year is in week 1)
+CC							century (2 digits) (the twenty-first century starts on 2001-01-01)
+J							Julian Date (integer days since November 24, 4714 BC at local midnight; see Section B.7)
+Q							quarter
+RM							month in upper case Roman numerals (I–XII; I=January)
+rm							month in lower case Roman numerals (i–xii; i=January)
+TZ							upper case time-zone abbreviation
+tz							lower case time-zone abbreviation
+TZH							time-zone hours
+TZM							time-zone minutes
+OF							time-zone offset from UTC (HH or HH:MM)
