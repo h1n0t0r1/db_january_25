@@ -1,0 +1,189 @@
+CREATE TABLE owners(
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    phone_number VARCHAR(15) NOT NULL,
+    address VARCHAR(50)
+);
+
+CREATE TABLE animal_types(
+    id SERIAL PRIMARY KEY,
+    animal_type VARCHAR(30) NOT NULL
+);
+
+CREATE TABLE cages(
+    id SERIAL PRIMARY KEY,
+    animal_type_id INTEGER REFERENCES animal_types ON DELETE CASCADE ON UPDATE CASCADE NOT NULL
+);
+
+CREATE TABLE animals(
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(30) NOT NULL,
+    birthdate DATE NOT NULL,
+    owner_id INTEGER REFERENCES owners ON DELETE CASCADE ON UPDATE CASCADE,
+    animal_type_id INTEGER REFERENCES animal_types ON DELETE CASCADE ON UPDATE CASCADE NOT NULL
+
+);
+
+CREATE TABLE volunteers_departments(
+    id SERIAL PRIMARY KEY,
+    department_name VARCHAR(30) NOT NULL
+);
+
+CREATE TABLE volunteers(
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    phone_number VARCHAR(15) NOT NULL,
+    address VARCHAR(50),
+    animal_id INTEGER REFERENCES animals ON DELETE CASCADE ON UPDATE CASCADE,
+    department_id INTEGER REFERENCES volunteers_departments ON DELETE  CASCADE ON UPDATE CASCADE NOT NULL
+);
+
+CREATE TABLE animals_cages(
+    cage_id INTEGER REFERENCES cages ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+    animal_id INTEGER REFERENCES animals ON DELETE CASCADE ON UPDATE CASCADE NOT NULL
+);
+
+2.2:
+INSERT INTO volunteers (name, phone_number, address, animal_id, department_id)
+VALUES
+    ('Anita Kostova', '0896365412', 'Sofia, 5 Rosa str.', 15, 1),
+    ('Dimitur Stoev', '0877564223',	NULL, 42, 4),
+    ('Kalina Evtimova',	'0896321112', 'Silistra, 21 Breza str.', 9,	7),
+    ('Stoyan Tomov', '0898564100',	'Montana, 1 Bor str.', 18, 8),
+    ('Boryana Mileva', '0888112233', NULL, 31, 5)
+;
+
+INSERT INTO animals (name, birthdate, owner_id, animal_type_id)
+VALUES 
+    ('Giraffe',	'2018-09-21', 21, 1),
+    ('Harpy Eagle',	'2015-04-17', 15, 3),
+    ('Hamadryas Baboon', '2017-11-02', NULL, 1),
+    ('Tuatara',	'2021-06-30', 2, 4)
+;
+
+2.3:  
+UPDATE animals
+SET owner_id = (SELECT id FROM owners WHERE name = 'Kaloqn Stoqnov')
+WHERE owner_id IS NULL
+;
+
+2.4
+DELETE FROM volunteers_departments WHERE  department_name = 'Education program assistant'
+
+3.5
+SELECT
+    name,
+    phone_number,
+    address,
+    animal_id,
+    department_id
+FROM volunteers
+ORDER BY name, animal_id, department_id
+
+3.6:
+SELECT
+    a.name,
+    at.animal_type,
+    to_char(a.birthdate, 'DD.MM.YYYY') as birthdate -- кастваме към чар и му указваме в какъв формат да е 'DD.MM.YYYY'
+FROM animals as a
+    join animal_types as at
+        on a.animal_type_id = at.id
+ORDER BY name
+
+3.7:
+SELECT
+    o.name,
+    count(*) as count_of_animals
+FROM
+    owners as o
+        JOIN animals as a
+            on a.owner_id = o.id
+GROUP BY o.name
+ORDER BY count_of_animals DESC, name
+LIMIT 5
+
+
+3.8:
+SELECT
+    concat(o.name, ' - ', a.name) as "owners - animals",
+    o.phone_number,
+    ac.cage_id
+FROM owners as o
+    JOIN animals as a
+        on o.id = a.owner_id
+            join animals_cages as ac
+                on ac.animal_id = a.id
+                    join animal_types as at
+                        ON a.animal_type_id = at.id
+WHERE at.animal_type = 'Mammals'
+ORDER BY o.name, a.name DESC
+
+3.9: 
+SELECT
+    v.name as volunteers,
+    v.phone_number,
+    trim(replace(replace(v.address,'Sofia', ''), ',', '')) as address
+FROM volunteers as v
+    JOIN volunteers_departments as vd
+        ON v.department_id = vd.id
+WHERE
+    vd.department_name = 'Education program assistant'
+    and v.address LIKE '%Sofia%'
+ORDER BY v.name
+
+3.10:
+SELECT
+    a.name as animal,
+    extract('year' FROM birthdate) as birth_year,
+    at.animal_type
+FROM animals as a
+    join animal_types as at
+        ON a.animal_type_id = at.id
+WHERE
+    at.animal_type <> 'Birds'
+    and age('01/01/2022', a.birthdate) < '5 year'
+    and a.owner_id is NULL
+ORDER BY a.name
+
+
+4.11:
+
+CREATE OR REPLACE FUNCTION fn_get_volunteers_count_from_department(searched_volunteers_department varchar(30))
+RETURNS INT AS
+$$
+    DECLARE
+        volunteer INT;
+    BEGIN
+        volunteer :=
+                (SELECT COUNT(*)
+                 FROM volunteers AS v
+                          JOIN volunteers_departments AS vd
+                               ON v.department_id = vd.id
+                 WHERE vd.department_name = searched_volunteers_department
+        );
+        RETURN volunteer;
+    END;
+$$
+LANGUAGE plpgsql;
+
+4.12:  
+		
+CREATE OR REPLACE PROCEDURE sp_animals_with_owners_or_not(
+    IN animal_name varchar(30),
+    OUT result varchar(30)
+)
+AS
+$$
+    BEGIN
+        SELECT
+            o.name
+        INTO result
+        FROM owners as o
+            join animals as a
+                on o.id = a.owner_id
+        WHERE a.name = animal_name;
+
+        if result is NULL then result := 'For adoption';  end if;
+    END;
+$$
+LANGUAGE plpgsql;

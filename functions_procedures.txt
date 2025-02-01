@@ -1,0 +1,297 @@
+/*Function to get initias*/
+	CREATE or REPLACE FUNCTION fn_get_initials(varchar, varchar)
+	RETURNS varchar(5) AS
+	$$
+		BEGIN
+			RETURN concat(LEFT($1, 1), '.', left($2, 1), '.');
+		END
+	$$
+	LANGUAGE plpgsql
+	;
+	SELECT fn_get_initials('Cvetan', 'Tomov')
+	
+	/*Same function with variables and alias*/
+	DECLARE
+        first_name ALIAS FOR $1;
+        last_name ALIAS FOR $2;
+    BEGIN
+        RETURN concat(LEFT(first_name, 1), '.', left(last_name, 1), '.');
+    END
+	
+	/*Same function with variables and types in function definition BEST PRATCTICE!*/
+	CREATE or REPLACE FUNCTION fn_get_initials(first_name varchar, last_name varchar)
+	RETURNS varchar(5) AS
+	$$
+		
+	
+	/*Function with IF ELSE, returns full name*/
+	CREATE or REPLACE FUNCTION fn_get_full_name(first_name varchar, last_name varchar)
+	RETURNS varchar(20) AS
+	$$
+		DECLARE
+			full_name varchar;
+		BEGIN
+			IF first_name IS NULL AND last_name IS NULL THEN
+				full_name := NULL;
+			ELSIF first_name is NULL THEN
+				full_name := last_name;
+			ELSIF last_name is NULL THEN
+				full_name := first_name;
+			ELSE
+				full_name := concat(first_name, ' ', last_name);
+			END IF;
+			RETURN full_name;
+		END
+	$$
+	LANGUAGE plpgsql
+	;
+	
+	/*How to select data from table and return single value*/
+	
+	CREATE OR REPLACE FUNCTION fn_get_country_id(c varchar)
+	RETURNS INT AS
+	$$
+		DECLARE
+			country_id int;
+		BEGIN
+			SELECT id FROM countries WHERE country = c INTO country_id;
+			RETURN country_id;
+		END
+	$$
+	LANGUAGE plpgsql
+	;
+	SELECT * FROM persons WHERE country_id = fn_get_country_id('Spain')
+	
+	/*Function with IN OUT parameters. When we have OUT parameters RETURNS is missing
+		because we return the value the out parameter*/
+	
+	CREATE OR REPLACE FUNCTION fn_get_country_id(IN c varchar, OUT c_id int, OUT status int)
+	AS
+	$$
+		BEGIN
+			SELECT id FROM countries WHERE country = c INTO c_id;
+			IF c_id is NOT NULL THEN
+				status := 0;
+			ELSE
+				status := 100;
+			END IF;
+		END
+	$$
+	LANGUAGE plpgsql
+	;
+	
+	/*Function with INSERT INTO and EXCEPTION*/
+	
+	CREATE OR REPLACE FUNCTION fn_add_country(c_name varchar, c_id int)
+	RETURNS bool AS
+	$$
+		BEGIN
+			INSERT INTO countries (id, country)
+			VALUES (c_id, c_name);
+			RETURN TRUE;
+			EXCEPTION
+				WHEN UNIQUE_VIOLATION THEN RETURN FALSE;
+		END
+	$$
+	LANGUAGE plpgsql
+	;
+
+	/*Function that returns table. In this case we RETURNS TABLE and declare all the 
+		columns and data types for the returned table*/
+
+	CREATE or REPLACE FUNCTION fn_get_persons()
+	RETURNS TABLE (id int, full_name varchar, country varchar)
+	AS
+	$$
+		BEGIN
+			RETURN QUERY (
+				SELECT
+					p.id,
+					concat(p.first_name, ' ', p.last_name)::varchar as full_name, -- this cast is in case we have null value
+					c.country
+				FROM persons as p join countries as c
+						 ON p.country_id = c.id
+			);
+		END
+	$$
+	LANGUAGE plpgsql
+	;
+	
+/*Debugging with RAISE NOTICE*/
+	
+CREATE or REPLACE FUNCTION fn_show_msg(msg varchar)
+RETURNS bool AS
+$$
+    BEGIN
+        RAISE NOTICE 'Very important notice: %', msg;
+        RETURN TRUE;
+    END
+$$
+LANGUAGE plpgsql;
+
+/*Procedure to add country*/
+
+CREATE PROCEDURE sp_add_country(IN c_name varchar, IN c_id int, OUT status int)
+AS
+$$
+    BEGIN
+       INSERT INTO countries (id, country)
+        VALUES (c_id, c_name);
+        status := 0;
+       EXCEPTION
+
+            WHEN UNIQUE_VIOLATION THEN status := 1;
+            RAISE NOTICE 'error: %', SQLERRM;
+    END
+$$
+LANGUAGE plpgsql;
+
+CALL sp_add_country('Magadascar', 44, 0)
+
+22: Транзакции
+Започват с BEGIN;
+Завършват с COMMIT or ROLLBACK
+Като пример ще си създадем таблица banк и ще прехвърлим пари от един акаунт на друг
+/*Transactions
+	Transaction to transfer money from one account to another.
+	For this purpose we will create a table with some data
+*/
+
+CREATE TABLE bank(
+    id int PRIMARY KEY,
+    name varchar(20),
+    bgn int
+);
+
+INSERT INTO bank(id, name, bgn)
+VALUES
+    (1, 'Ivan', 1000),
+    (2, 'Mimi', 2000)
+	
+
+/*Procedure for transaction*/
+
+CREATE or REPLACE PROCEDURE sp_transfer_money(
+    IN sender_id int,
+    IN receiver_id int,
+    IN transfer_amount int,
+    OUT status varchar(50)
+)
+AS
+$$
+    DECLARE
+        sender_amount int;
+        receiver_amount int;
+        temp_val int;
+    BEGIN
+--         get sender amount and check if there is enough money
+        SELECT bgn from bank WHERE id = sender_id INTO sender_amount;
+        if sender_amount < transfer_amount then
+            status := 'The sender does not have enough money';
+            RETURN ;
+        END IF;
+--         get amount of the receiver before transaction
+        SELECT bgn FROM bank WHERE id = receiver_id INTO receiver_amount;
+--         substract money from sender
+        UPDATE bank SET bgn = bgn - transfer_amount WHERE id = sender_id;
+--             add money to the receiver
+        UPDATE bank SET bgn = bgn + transfer_amount WHERE  id = receiver_id;
+--         check the money in sender are correct
+        SELECT bgn FROM bank WHERE id = sender_id INTO temp_val;
+        IF sender_amount - transfer_amount <> temp_val THEN
+            status := 'Error when transfer from sender';
+            ROLLBACK;
+            RETURN;
+        END IF;
+--         Check the money in receiver are ok
+        SELECT bgn from bank WHERE  id = receiver_id INTO temp_val;
+        IF receiver_amount + transfer_amount <> temp_val THEN
+            status := 'Error when transfer to receiver';
+            ROLLBACK;
+            RETURN;
+        END IF;
+--         Commit transaction
+        status := 'Success';
+        COMMIT;
+
+
+    END
+$$
+LANGUAGE plpgsql
+;
+
+
+
+32: Тригери - функции които се извикват  при UPDATE, DELETE, INSERT, TRUNCATE
+	Могат да се извикат преди или след евента
+	В постгре тригерите се имплементират, като се създава функция, 
+	която RETURNS TRIGGER.
+	NEW - Репрезентира новата стойност на записа.
+		* има го в INSERT and UPDATE
+	OLD - Репрезентира старата стойност
+		* има ги в UPDATE and DELETE
+		
+	/*Example: we will create two tables. When a record was created in table items
+		we will backup this record to the table items_log
+	*/
+	
+		CREATE TABLE items(
+			id SERIAL PRIMARY KEY,
+			status int,
+			created date DEFAULT now()
+		);
+
+		CREATE TABLE items_log(
+			id SERIAL PRIMARY KEY,
+			status int,
+			created date DEFAULT now()
+		);
+		
+	
+	/*Trigers in postgre are functions that returns TRIGGER*/
+	CREATE FUNCTION log_items()
+	RETURNS TRIGGER
+	AS
+	$$
+		BEGIN
+			INSERT INTO items_log(id, status, created)
+			VALUES (new.id, new.status, new.created);
+			RETURN NEW;
+		END;
+	$$
+	LANGUAGE plpgsql
+	;
+	CREATE TRIGGER log_items_trigger
+	AFTER INSERT on items -- Execute after INSERT
+	FOR EACH ROW EXECUTE PROCEDURE log_items()   
+													
+	-- Insert data into the table
+	INSERT INTO items (id, status)
+	VALUES
+		(1, floor(random() * 100)),
+		(2, floor(random() * 100)),
+		(3, floor(random() * 100)),
+		(4, floor(random() * 100)),
+		(5, floor(random() * 100)),
+		(6, floor(random() * 100))
+	;
+	
+	/*Create trigger to keep last N records only*/
+	CREATE OR REPLACE FUNCTION delete_last_items_log()
+	RETURNS TRIGGER
+	AS
+	$$
+		BEGIN
+			WHILE (SELECT count(*) from items_log) > 8 LOOP
+				DELETE FROM items_log WHERE id = (SELECT min(id) from items_log);
+			END LOOP;
+			RETURN NEW;
+		END;
+	$$
+	LANGUAGE plpgsql
+	;
+
+	CREATE OR REPLACE TRIGGER clear_items_log_triger
+	AFTER INSERT on items_log
+	FOR EACH STATEMENT EXECUTE PROCEDURE delete_last_items_log()
+	
